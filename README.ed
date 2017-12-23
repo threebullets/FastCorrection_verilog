@@ -1,0 +1,21 @@
+#  FastCorrection_verilog
+
+
+## What is FastCorrection
+对微光与红外图像融合前的配准问题进行快速校正，对红外图像进行畸变、缩放、平移和旋转校正，使其能和微光图像完成配准。将算法移植为verilog程序，并进行仿真。
+
+## Program structure and introduction
+vivado生成双口RAMIP核，名为BRAM,将raw格式图像读入，储存在BRAM中。生成ROMIP核，查找表存在ROM中。Crc模块依取出ROM中数据，根据该数据到BRAM中取出对应像素点的灰度值，以此类推，完成校正。
+Scaler_tb.v : testbeach
+Scaler.v : 整体模块
+Crc.v : 校正模块
+
+## How to use FastCorrection
+step 1:
+创建工程;
+step 2:
+生成所需IP核
+step 3:
+引用模块
+step 4:
+仿真Scaler_tb.v

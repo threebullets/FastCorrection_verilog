@@ -20,25 +20,26 @@
 
 module Crc(
 input clk,
+input [18:0] cnt,
+input  [18:0] loc,
 input [7:0] dataA,
-input  [17:0] loc,
-input [17:0] cnt,
-output [17:0] dataAaddr,
-output [17:0] locaddr,
-output [7:0] dataout
+output wire [18:0] locaddr,
+output wire [18:0] dataAaddr,
+output wire [7:0] dataout,
+output Enout
 );
 
 
 
 reg [7:0] dataA_d0;
-
-reg [17:0] locaddr_reg;
-reg [17:0] dataAaddr_reg;
+reg [18:0] locaddr_reg;
+reg [18:0] dataAaddr_reg;
 
 
 assign locaddr = locaddr_reg;
 assign dataAaddr = dataAaddr_reg;
 assign dataout = dataA_d0;
+assign Enout = (dataout!=8'd0)?1'b1:1'b0;
 
 
 

@@ -11,11 +11,10 @@ Email Address       :       15611662571@163.com
 ProjectName         :       FastCorrection_verilog
 Data                :       2017-12-23
 Description         :       Fast correction for image registration in vivado.
-Modification History    :   1)Use LUT method to complete the correction of the image, including distortion, scaling, translation and rotation
-                            2)Add README.md and version.md
-
+Modification History    :   1)In the simulation, an external SRAM model is used to replace the Block ROM that stores the LUT.SRAM model : GS8644Z36E
+							2)In the testbeach.v, firstly write the image and look-up table, when the data is completely written, the system began to process data.
 Data            By          Version         Change Description
 =========================================================================
-17/12/23        liubing       1.0               Modify and Add
+18/1/10        liubing       2.0                 Modify 
 -------------------------------------------------------------------------
 ```

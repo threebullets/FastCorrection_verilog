@@ -1,35 +1,4 @@
-/*-----------------------------------------------------------------------------
-
-								Video Stream Scaler testbench
-								
-							Author: David Kronstein
-							
-
-
-Copyright 2011, David Kronstein, and individual contributors as indicated
-by the @authors tag.
-
-This is free software; you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as
-published by the Free Software Foundation; either version 2.1 of
-the License, or (at your option) any later version.
-
-This software is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this software; if not, write to the Free
-Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-02110-1301 USA, or see the FSF site: http://www.fsf.org.
-
--------------------------------------------------------------------------------
-
-Testbench for streamScaler V1.0.0
-
-*/
-`timescale 1ms/1ms
+`timescale 1ns/100ps
 `default_nettype none
 
 //Input files. Raw data format, no header. 8 bits per pixel, 3 color channels.
@@ -79,12 +48,10 @@ wire [7-1:0] done;
 endmodule
 
 module CorrectionTest #(
-parameter INPUT_X_RES = 346-1,
-parameter INPUT_Y_RES = 346-1,
-parameter OUTPUT_X_RES = 173-1,   //Output resolution - 1
-parameter OUTPUT_Y_RES = 173-1,   //Output resolution - 1
-parameter X_SCALE = 32'h4000 * (INPUT_X_RES) / (OUTPUT_X_RES)-1,
-parameter Y_SCALE = 32'h4000 * (INPUT_Y_RES) / (OUTPUT_Y_RES)-1,
+parameter INPUT_X_RES = 640-1,
+parameter INPUT_Y_RES = 512-1,
+parameter OUTPUT_X_RES = 640-1,   //Output resolution - 1
+parameter OUTPUT_Y_RES = 512-1,   //Output resolution - 1
 
 parameter DATA_WIDTH = 8,
 parameter CHANNELS = 1,
@@ -96,60 +63,42 @@ parameter OUTPUT_Y_RES_WIDTH = 11,
 parameter BUFFER_SIZE = 6				//Number of RAMs in RAM ring buffer
 )(
 input wire [50*8:0] inputFilename, outputFilename,
-
-//Control
-input wire [DISCARD_CNT_WIDTH-1:0]	inputDiscardCnt,		//Number of input pixels to discard before processing data. Used for clipping
-input wire [INPUT_X_RES_WIDTH+14-1:0] leftOffset,
-input wire [14-1:0]	topFracOffset,
-input wire nearestNeighbor,
-
 output reg done
 
 );
 
 
-reg clk0;
-reg clk1;
+reg clk;
 reg rst;
-reg dOuten;
+reg dOutValid;
 
 
 reg [DATA_WIDTH*CHANNELS-1:0] dIn;
 reg		dInValid;
 reg	nextDin;
+wire Eout0;
 reg		start;
 
-wire [DATA_WIDTH*CHANNELS-1:0] dOut;
-wire	dOutValid;
-reg		nextDout;
-reg test;
 
-integer r, rfile, wfile;
+wire [DATA_WIDTH*CHANNELS-1:0] dOut;
+
+integer r, rfile, wfile,r_Lut, rfile_Lut, wfile_Lut;
 
 initial // Clock generator
   begin
     #10 //Delay to allow filename to get here
-    clk0 = 0;
-    #5 forever #5 clk0 = !clk0;
+    clk = 0;
+    #5 forever #5 clk = !clk;
   end
 
- initial // Clock generator
-  begin
-    #1200000 //Delay to allow filename to get here
-    clk1 = 0;
-    #5 forever #5 clk1 = !clk1;
-  end
+
   
-  	initial
+initial  // done
 	begin
 	  #10
-	  test = 0;
-	  while(done != 1)
-	  begin
+	  while(done != 7'b1111111)
 	   #10
-	    test = 1;
-	   end
-	   test = 0;
+	   ;
 		$stop;
 	end
 	
@@ -168,47 +117,38 @@ initial	// Reset
  initial	// nextDin
   begin
 	nextDin = 0;
-    #2060 
+	dInValid = 0;
+    #100 
     nextDin = 1;
-    #1197160
+	dInValid = 1;
+    #3276800
     nextDin = 0;
+	dInValid = 0;
   end 
   
-   initial	// 	dOuten
+   initial	// 	dOutValid
   begin
-	dOuten = 0;
-    #1200000
-    dOuten = 1;
-    #299290
-    dOuten = 0;
+	dOutValid = 0;
+    #3277000
+    dOutValid = 1;
   end 
   
 
   
-reg eof;
 reg [DATA_WIDTH*CHANNELS-1:0] readMem [0:0];
 initial // Input file read, generates dIn data
 begin
   #10 //Delay to allow filename to get here
-	rfile = $fopen("src/create8row.raw", "rb");
+	rfile = $fopen("D:/work/Projects/vivado/FastCorrection/src/src/infrared.raw", "rb");
 	
 	dIn = 0;
-	dInValid = 0; 
-	start = 0;
-
-	#41
-	start = 1;
-
-	#10
-	start = 0;
-
-//	#20
-	#2000
+	
+	#90
 	r = $fread(readMem, rfile);
 	dIn = readMem[0];
 	while(! $feof(rfile))
 	begin
-		dInValid = 1;
+		
 		#10 
 		if(nextDin) 
 		begin
@@ -218,19 +158,74 @@ begin
 	end
 
   $fclose(rfile);
+  
 end
 
 
+integer i;
+reg nW;
+reg [19:0] dIn_Lut;
+reg [19:0] data[0:327680-1];
+wire [8:0] DQa_w,DQb_w,DQc_w,DQd_w;
+initial
+begin
+nW = 1;
+#100
+nW = 0;
+$readmemh("D:/work/Projects/vivado/FastCorrection/src/src/LutMethod32H.txt",data);
+for(i=0;i<327681;i=i+1)
+    begin
+		#10
+		dIn_Lut = data[i];
+		//$monitor($time,,"dIn_Lut=%h",dIn_Lut);
+    end
+nW = 1'bx;
+#90
+nW = 1;
+end
+assign DQa_w = dIn_Lut[8:0];
+assign DQb_w = dIn_Lut[17:9];
+assign DQc_w = {7'b0000000,dIn_Lut[19:18]};
+assign DQd_w = 9'd0;
+
+/*reg [35 :0] readMem_Lut [0:0];
+reg [35:0] dIn_Lut;
+wire [8:0] DQa_w,DQb_w,DQc_w,DQd_w;
+reg nW;
+initial  // Input file read, generates dIn data
+begin
+  #3276950 //Delay to allow filename to get here
+	rfile_Lut = $fopen("D:/work/Projects/vivado/FastCorrection/src/src/LutMethod32H.txt", "rb");
+	
+	dIn_Lut = 0;
 
 
-
+	#50
+	r_Lut = $fread(readMem_Lut, rfile_Lut);
+	dIn_Lut = readMem_Lut[0];
+	nW = 0;
+	while(! $feof(rfile_Lut))
+	begin
+		#10 
+		r_Lut = $fread(readMem_Lut, rfile_Lut);
+		dIn_Lut = readMem_Lut[0];
+	end
+    #3276800
+	nW = 1;
+  $fclose(rfile);
+end
+//assign DQa_w = dIn_Lut[8:0];
+//assign DQb_w = dIn_Lut[17:9];
+//assign DQc_w = dIn_Lut[26:18];
+//assign DQd_w = dIn_Lut[35:27];
+*/
 
 //Read dOut and write to file
 integer dOutCount;
 initial
 begin
   #10 //Delay to allow filename to get here
-	wfile = $fopen("out/restore8.raw", "wb");
+	wfile = $fopen("D:/work/Projects/vivado/FastCorrection/src/out/infrared_out.raw", "wb");
 	dOutCount = 0;
 	#1
 	while(dOutCount < (OUTPUT_X_RES+1) * (OUTPUT_Y_RES+1))
@@ -248,17 +243,21 @@ begin
 	done = 1;
 end
 
-Correction Correction_inst (
-.clk0( clk0 ),
-.clk1( clk1 ),
+Correction Correction0 (
+.clk( clk ),
 .rst( rst ),
 //Input
-.dIn( dIn ),
 .dInValid( dInValid ),
-.dOuten(dOuten),
+.dOutValid(dOutValid),
+.nW(nW),
+.dIn( dIn ),
+.DQa_write(DQa_w),
+.DQb_write(DQb_w),
+.DQc_write(DQc_w),
+.DQd_write(DQd_w),
 //Output
 .dOut( dOut ),
-.dOutValid( dOutValid )
+.Eout(Eout0)
 );
 
 endmodule

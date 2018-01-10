@@ -1,21 +1,19 @@
 #  FastCorrection_verilog
+## What is FastCorrection_verilog
+In the non-coaxial image fusion optical system, when the uncooled infrared detector and the low-illumination CMOS detector image the same infinity scene, due to the nature of the detector and the mechanical error of the system assembly, Image is not exactly the same,  there is translation, rotation and scaling relationship between the two images, in addition, the image itself is also a distortion problem. Therefore, the system needs to be registered before image fusion, so that the infrared and low light images can be completely matched. According to the offset between the infrared image and the glimmer image, the program can correct the infrared image to a position that can match the glimmer image.
 
 
-## What is FastCorrection
-对微光与红外图像融合前的配准问题进行快速校正，对红外图像进行畸变、缩放、平移和旋转校正，使其能和微光图像完成配准。将算法移植为verilog程序，并进行仿真。
+## Project structure and introduction
+vivado generate dual-port RAM core, called BRAM, raw format image read BRAM. Generate ROM core (v2.0 after the use of external SRAM model, model GS8644Z36E), the look-up table read into ROM. Crc module read the ROM data in turn, according to the data, Crc module remove the corresponding pixel gray value in the BRAM, and so on, and finally complete the correction.
 
-## Program structure and introduction
-vivado生成双口RAMIP核，名为BRAM,将raw格式图像读入，储存在BRAM中。生成ROMIP核，查找表存在ROM中。Crc模块依取出ROM中数据，根据该数据到BRAM中取出对应像素点的灰度值，以此类推，完成校正。
-Scaler_tb.v : testbeach
-Scaler.v : 整体模块
-Crc.v : 校正模块
+Correction_tb.v : testbeach Module
+Correction.v : Global Module
+Crc.v : Correction Module
 
-## How to use FastCorrection
+## How to use FastCorrection_verilog
 step 1:
-创建工程;
+Use Matlab procedures to generate a look-up table
 step 2:
-生成所需IP核
+Create a vivado project，Generate the required IP core。
 step 3:
-引用模块
-step 4:
-仿真Scaler_tb.v
+simulate Correction_tb.v
